@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 class StockPredictor(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers, device, prediction_window, batch_size=1, p=0):
+    def __init__(self, input_size, hidden_size, num_layers, device, prediction_window, bidirectional=False, batch_size=1, p=0):
         super(StockPredictor, self).__init__()
         
         ################### Model Properties ####################
@@ -15,16 +15,21 @@ class StockPredictor(nn.Module):
         self.p = p
         self.batch_size = batch_size
         self.prediction_window = prediction_window
+        self.bidirectional = bidirectional
+        self.directionality = 2 if bidirectional else 1
         self.device = device
         #########################################################
         
-        self.lstm = nn.LSTM(self.input_size, self.hidden_size, self.num_layers, dropout=self.p)
+        self.lstm = nn.LSTM(self.input_size, self.hidden_size // self.directionality, self.num_layers, dropout=self.p, 
+                            bidirectional=self.bidirectional)
         self.hidden_states = self.initialize_hidden_states()
         self.output = nn.Linear(self.hidden_size, self.prediction_window)
         
     def initialize_hidden_states(self):
-        return (torch.zeros((self.num_layers, self.batch_size, self.hidden_size), device=self.device),
-                torch.zeros((self.num_layers, self.batch_size, self.hidden_size), device=self.device))
+        return (torch.zeros((self.directionality * self.num_layers, self.batch_size, self.hidden_size // self.directionality), 
+                            device=self.device),
+                torch.zeros((self.directionality * self.num_layers, self.batch_size, self.hidden_size // self.directionality), 
+                            device=self.device))
     
     def forward(self, x):
         # x is of shape torch.size([batch_size, training_window])
@@ -35,5 +40,3 @@ class StockPredictor(nn.Module):
         prediction = self.output(lstm_out[-1].view(self.batch_size, -1))
         
         return prediction
-		
-		
