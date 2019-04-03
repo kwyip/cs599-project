@@ -12,13 +12,14 @@ def load_daily_data(path, tickers):
     df['Date'] = pd.to_datetime(df.Date, format='%m/%d/%Y')
     df = df.sort_values(['Date'])
     dfs = [df[df.Ticker == ticker] for ticker in tickers]
-
     return dfs
 
 def create_split(df, training_window=5, prediction_window=3):
     highs = df['High'].values
     volumes = df['Volume'].values
     scaler = MinMaxScaler()
+
+
     
     # Create training and testing data
     training_size = math.floor(0.9 * len(highs))
@@ -28,6 +29,14 @@ def create_split(df, training_window=5, prediction_window=3):
     train_volumes = volumes[0:training_size] 
     test_highs = highs[training_size:]
     test_volumes = volumes[training_size:]
+
+    train_highs = train_highs.astype('float64')
+    train_volumes = train_volumes.astype('float64')
+    test_highs = test_highs.astype('float64')
+    test_volumes = test_volumes.astype('float64')
+
+
+
 
     train_highs = train_highs.reshape(-1, 1)
     train_volumes = train_volumes.reshape(-1, 1)
